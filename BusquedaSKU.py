@@ -1,8 +1,12 @@
 import re
 import time
-import pip_system_certs  
 import requests
 import certifi
+
+try:
+    import pip_system_certs  # type: ignore  # noqa: F401
+except ModuleNotFoundError:
+    pip_system_certs = None
 
 
 HEADERS = {

@@ -1,9 +1,14 @@
 import re
 import time
 import json
-import pip_system_certs  
+import unicodedata
 import requests
-import certifi
+import urllib3
+
+try:
+    import pip_system_certs 
+except ModuleNotFoundError:
+    pip_system_certs = None
 
 
 HEADERS = {
@@ -25,11 +30,11 @@ TIMEOUT = 30
 RETRIES = 2
 BACKOFF = 1.2
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 # GET CENTRAL
 def http_get(url: str) -> requests.Response:
-
-    ca_bundle = certifi.where()
     last_err = None
 
     for attempt in range(RETRIES + 1):
@@ -38,8 +43,20 @@ def http_get(url: str) -> requests.Response:
                 url,
                 headers=HEADERS,
                 timeout=TIMEOUT,
-                verify=ca_bundle,
             )
+        except requests.exceptions.SSLError as e:
+            last_err = e
+            try:
+                return requests.get(
+                    url,
+                    headers=HEADERS,
+                    timeout=TIMEOUT,
+                    verify=False,
+                )
+            except Exception as e2:
+                last_err = e2
+                if attempt < RETRIES:
+                    time.sleep(BACKOFF * (attempt + 1))
         except Exception as e:
             last_err = e
             if attempt < RETRIES:
@@ -77,6 +94,21 @@ def parse_question(q: str):
 
     code = m.group(1)
     return store, code
+
+
+def wants_full_info(question: str) -> bool:
+    normalized = unicodedata.normalize("NFKD", question.lower())
+    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+
+    triggers = (
+        "todo",
+        "toda la informacion",
+        "informacion completa",
+        "info completa",
+        "completo",
+        "completa",
+    )
+    return any(trigger in normalized for trigger in triggers)
 
 
 # VTEX para metro y olímpica, y parte de éxito (EAN -> itemId -> getProductBySku)
@@ -310,18 +342,15 @@ def answer_full(q: str):
     return pretty(product)
 
 
-# Main
+
 if __name__ == "__main__":
     question = input("Pregunta: ").strip()
 
     try:
-        ql = question.lower()
-        # "todo" o "info completa" devuelve JSON completo
-        if "todo" in ql or "info completa" in ql or "completo" in ql:
+        if wants_full_info(question):
             print(answer_full(question))
         else:
             print(answer(question))
-    # Por mi entorno
     except requests.exceptions.SSLError as e:
         print("Error SSL persistente.")
         print("Detalle:", e)
