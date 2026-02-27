@@ -1,4 +1,4 @@
-﻿import re
+import re
 import time
 import json
 import unicodedata
@@ -108,10 +108,10 @@ def wants_full_info(question: str) -> bool:
     return any(trigger in normalized for trigger in triggers)
 
 
-# VTEX para metro y olÃ­mpica, y parte de Ã©xito (EAN -> itemId -> getProductBySku)
+# VTEX para metro y olÃƒÂ­mpica, y parte de ÃƒÂ©xito (EAN -> itemId -> getProductBySku)
 def extract_vtex(product: dict, code: str):
     """
-    Devuelve (price, list_price, name) si algÃºn item coincide por itemId o ean
+    Devuelve (price, list_price, name) si algÃƒÂºn item coincide por itemId o ean
     """
     name = product.get("productName", "Producto")
     for item in product.get("items", []):
@@ -155,7 +155,7 @@ def get_price_vtex(base: str, code: str):
     return None
 
 
-#Información completa del producto (no solo precio) desde VTEX o Ã‰xito
+#InformaciÃ³n completa del producto (no solo precio) desde VTEX o Ãƒâ€°xito
 def get_product_vtex(base: str, code: str):
     # 1) skuId directo
     url1 = f"{base}/api/catalog_system/pub/products/search/?fq=skuId:{code}"
@@ -169,7 +169,7 @@ def get_product_vtex(base: str, code: str):
     if r2.status_code == 200 and r2.json():
         return r2.json()[0]
 
-    # 3) fallback: búsqueda por texto ft
+    # 3) fallback: bÃºsqueda por texto ft
     url3 = f"{base}/api/catalog_system/pub/products/search/?ft={code}"
     r3 = http_get(url3)
     if r3.status_code == 200 and r3.json():
@@ -184,10 +184,10 @@ def get_product_vtex(base: str, code: str):
     return None
 
 
-# InformaciÃ³n completa del producto de Ã‰XITO (EAN -> itemId -> endpoint getProductBySku)
+# InformaciÃƒÂ³n completa del producto de Ãƒâ€°XITO (EAN -> itemId -> endpoint getProductBySku)
 def get_price_exito_by_skuid(skuid: str):
     """
-    Endpoint de Ã‰xito por skuId interno (itemId).
+    Endpoint de Ãƒâ€°xito por skuId interno (itemId).
     """
     url = f"https://www.exito.com/api/product/getProductBySku?skuid={skuid}"
     r = http_get(url)
@@ -215,7 +215,7 @@ def get_price_exito_by_skuid(skuid: str):
 
 def get_exito_itemid_from_ean(ean: str):
     """
-    Busca en el catÃ¡logo VTEX de Ã‰xito por EAN y devuelve el itemId (skuid interno).
+    Busca en el catÃƒÂ¡logo VTEX de Ãƒâ€°xito por EAN y devuelve el itemId (skuid interno).
     """
     base = "https://www.exito.com"
     url = f"{base}/api/catalog_system/pub/products/search/?fq=alternateIds_Ean:{ean}"
@@ -241,10 +241,10 @@ def get_exito_itemid_from_ean(ean: str):
 
 def get_price_exito(code: str):
     """
-    - Si code parece EAN (13+ dÃ­gitos): EAN -> itemId -> getProductBySku
+    - Si code parece EAN (13+ dÃƒÂ­gitos): EAN -> itemId -> getProductBySku
     - Si code es skuId: intenta directo
     """
-    # intenta directo por si el usuario pasÃ³ skuid
+    # intenta directo por si el usuario pasÃƒÂ³ skuid
     direct = get_price_exito_by_skuid(code)
     if direct:
         return direct
@@ -259,9 +259,9 @@ def get_price_exito(code: str):
 
 def get_product_exito(code: str):
     """
-    Devuelve un dict con informaciÃ³n "completa" desde:
+    Devuelve un dict con informaciÃƒÂ³n "completa" desde:
     - VTEX (si el code era EAN o se puede encontrar)
-    - Endpoint de Ã‰xito getProductBySku (por itemId/skuid)
+    - Endpoint de Ãƒâ€°xito getProductBySku (por itemId/skuid)
     """
     vtex_product = None
     skuid = None
@@ -276,7 +276,7 @@ def get_product_exito(code: str):
         if rv.status_code == 200 and rv.json():
             vtex_product = rv.json()[0]
     else:
-        # si no se encontrÃ³ itemid, asumimos que code ya es skuid
+        # si no se encontrÃƒÂ³ itemid, asumimos que code ya es skuid
         skuid = code
         # (opcional) intentar traer VTEX por skuId
         url_vtex2 = f"https://www.exito.com/api/catalog_system/pub/products/search/?fq=skuId:{code}"
@@ -284,7 +284,7 @@ def get_product_exito(code: str):
         if rv2.status_code == 200 and rv2.json():
             vtex_product = rv2.json()[0]
 
-    # 2) endpoint de Ã‰xito por skuid
+    # 2) endpoint de Ãƒâ€°xito por skuid
     exito_sku = None
     url_sku = f"https://www.exito.com/api/product/getProductBySku?skuid={skuid}"
     rs = http_get(url_sku)
@@ -292,7 +292,6 @@ def get_product_exito(code: str):
         exito_sku = rs.json()
 
     return {"skuid": skuid, "vtex_product": vtex_product, "exito_sku": exito_sku}
-
 
 
 # Funciones para extraer info consistente del producto (nombre, precio, imagen) intentando matchear item por itemId o EAN, y con fallback al primer item si no hay match exacto.
@@ -321,6 +320,56 @@ def extract_item_and_offer(product: dict, code: str):
         offer = sellers[0]["commertialOffer"]
 
     return selected, offer
+
+
+def sanitize_items(items):
+    """
+    Normaliza items al formato solicitado y evita campos extra (ej. metodos de pago).
+    """
+    cleaned = []
+    for product_item in items or []:
+        images_clean = []
+        for img in product_item.get("images", []) or []:
+            images_clean.append(
+                {
+                    "imageUrl": img.get("imageUrl"),
+                    "imageLastModified": img.get("imageLastModified"),
+                }
+            )
+
+        sellers_clean = []
+        for seller in product_item.get("sellers", []) or []:
+            offer = seller.get("commertialOffer") or {}
+            sellers_clean.append(
+                {
+                    "sellerId": seller.get("sellerId"),
+                    "sellerName": seller.get("sellerName"),
+                    "addToCartLink": seller.get("addToCartLink"),
+                    "sellerDefault": seller.get("sellerDefault"),
+                    "commertialOffer": {
+                        "BuyTogether": offer.get("BuyTogether"),
+                        "Price": offer.get("Price"),
+                        "ListPrice": offer.get("ListPrice"),
+                        "PriceWithoutDiscount": offer.get("PriceWithoutDiscount"),
+                        "FullSellingPrice": offer.get("FullSellingPrice"),
+                        "PriceValidUntil": offer.get("PriceValidUntil"),
+                        "AvailableQuantity": offer.get("AvailableQuantity"),
+                        "IsAvailable": offer.get("IsAvailable"),
+                        "Tax": offer.get("Tax"),
+                    },
+                }
+            )
+
+        cleaned.append(
+            {
+                "isKit": product_item.get("isKit"),
+                "images": images_clean,
+                "sellers": sellers_clean,
+                "Videos": product_item.get("Videos", []),
+                "estimatedDateArrival": product_item.get("estimatedDateArrival"),
+            }
+        )
+    return cleaned
 
 
 def summarize_store_product(store: str, code: str):
@@ -377,12 +426,29 @@ def summarize_store_product(store: str, code: str):
             descuento = f"{pct}%"
             ahorro = money_cop(list_price - price)
 
+        items_min = sanitize_items(product.get("items", []))
+
+        specifications_map = {}
+        for spec_name in product.get("allSpecifications", []) or []:
+            specifications_map[spec_name] = product.get(spec_name)
+
         return {
             "tienda": store,
             "sku_consultado": code,
             "id": str(product.get("productId")) if product.get("productId") else None,
             "sku": str(sku) if sku else None,
             "ean": str(ean) if ean else None,
+            "productId": str(product.get("productId")) if product.get("productId") else None,
+            "productName": name or "Producto",
+            "brand": product.get("brand"),
+            "productTitle": product.get("productTitle"),
+            "metaTagDescription": product.get("metaTagDescription"),
+            "releaseDate": product.get("releaseDate"),
+            "categories": product.get("categories"),
+            "Maximum_units_to_sell": product.get("Maximum_units_to_sell"),
+            "allSpecifications": product.get("allSpecifications"),
+            "specifications_map": specifications_map,
+            "items": items_min,
             "nombre": name or "Producto",
             "descripcion": product.get("metaTagDescription"),
             "categoria": product.get("categories")[0] if product.get("categories") else None,
@@ -433,12 +499,29 @@ def summarize_store_product(store: str, code: str):
         descuento = f"{pct}%"
         ahorro = money_cop(list_price - price)
 
+    items_min = sanitize_items(product.get("items", []))
+
+    specifications_map = {}
+    for spec_name in product.get("allSpecifications", []) or []:
+        specifications_map[spec_name] = product.get(spec_name)
+
     return {
         "tienda": store,
         "sku_consultado": code,
         "id": str(product.get("productId")) if product.get("productId") else None,
         "sku": str(sku) if sku else None,
         "ean": str(ean) if ean else None,
+        "productId": str(product.get("productId")) if product.get("productId") else None,
+        "productName": product.get("productName", "Producto"),
+        "brand": product.get("brand"),
+        "productTitle": product.get("productTitle"),
+        "metaTagDescription": product.get("metaTagDescription"),
+        "releaseDate": product.get("releaseDate"),
+        "categories": product.get("categories"),
+        "Maximum_units_to_sell": product.get("Maximum_units_to_sell"),
+        "allSpecifications": product.get("allSpecifications"),
+        "specifications_map": specifications_map,
+        "items": items_min,
         "nombre": product.get("productName", "Producto"),
         "descripcion": product.get("metaTagDescription"),
         "categoria": product.get("categories")[0] if product.get("categories") else None,
@@ -491,8 +574,51 @@ def answer(q: str):
 
 def answer_full(q: str):
     """
-    Devuelve informacion completa en texto ordenado para una tienda o para las 3 tiendas.
+    Devuelve informacion completa en formato natural y legible por tienda.
     """
+    def format_value(value):
+        if value is None:
+            return "N/A"
+        if isinstance(value, list):
+            if not value:
+                return "N/A"
+            return " | ".join(str(v) for v in value)
+        return str(value)
+
+    def format_items(items):
+        if not items:
+            return ["Items: N/A"]
+
+        lines = [f"Items: {len(items)}"]
+        for i, item in enumerate(items, start=1):
+            image_urls = [
+                img.get("imageUrl")
+                for img in (item.get("images") or [])
+                if img.get("imageUrl")
+            ]
+            seller_names = [
+                s.get("sellerName")
+                for s in (item.get("sellers") or [])
+                if s.get("sellerName")
+            ]
+            lines.extend(
+                [
+                    f"  - Item {i}:",
+                    f"    isKit: {format_value(item.get('isKit'))}",
+                    f"    imagenes: {format_value(image_urls)}",
+                    f"    sellers: {format_value(seller_names)}",
+                    f"    videos: {len(item.get('Videos') or [])}",
+                    f"    estimatedDateArrival: {format_value(item.get('estimatedDateArrival'))}",
+                ]
+            )
+        return lines
+
+    def get_spec(specs: dict, *keys):
+        for key in keys:
+            if key in specs and specs.get(key) is not None:
+                return specs.get(key)
+        return None
+
     store, code = parse_question(q)
     stores_to_query = [store] if store else list(STORES.keys())
 
@@ -502,25 +628,33 @@ def answer_full(q: str):
     for current_store in stores_to_query:
         data = summarize_store_product(current_store, code)
         if data:
+            specs = data.get("specifications_map") or {}
             lines = [
                 f"Tienda: {current_store.title()}",
-                f"nombre: {data.get('nombre') or 'N/A'}",
-                f"id: {data.get('id') or 'N/A'}",
-                f"brand: {data.get('marca') or 'N/A'}",
-                f"descripcion: {data.get('descripcion') or 'N/A'}",
-                f"categoria: {data.get('categoria') or 'N/A'}",
-                f"precio: {data.get('precio') or 'N/A'}",
-                f"precio_lista: {data.get('precio_lista') or 'N/A'}",
-                f"descuento: {data.get('descuento') or 'N/A'}",
-                f"ahorro: {data.get('ahorro') or 'N/A'}",
-                f"price: {data.get('price') or 'N/A'}",
-                f"last price: {data.get('last_price') or 'N/A'}",
-                f"PriceWithoutDiscount: {data.get('PriceWithoutDiscount') or 'N/A'}",
-                f"FullSellingPrice: {data.get('FullSellingPrice') or 'N/A'}",
-                f"PriceValidUntil: {data.get('PriceValidUntil') or 'N/A'}",
-                f"link: {data.get('link') or 'N/A'}",
-                f"link_imagen: {data.get('link_imagen') or 'N/A'}",
+                f"Producto: {format_value(data.get('productName') or data.get('nombre'))}",
+                f"ID de producto: {format_value(data.get('productId') or data.get('id'))}",
+                f"Marca: {format_value(data.get('brand') or data.get('marca'))}",
+                f"Titulo: {format_value(data.get('productTitle'))}",
+                f"Descripcion: {format_value(data.get('metaTagDescription') or data.get('descripcion'))}",
+                f"Fecha de lanzamiento: {format_value(data.get('releaseDate'))}",
+                f"Categorias: {format_value(data.get('categories') or [])}",
+                f"Link: {format_value(data.get('link'))}",
+                f"Maximo de unidades: {format_value(data.get('Maximum_units_to_sell') or [])}",
+                f"Tipo de Producto: {format_value(specs.get('Tipo de Producto'))}",
+                f"Marca (especificacion): {format_value(specs.get('Marca'))}",
+                f"EAN: {format_value(specs.get('EAN'))}",
+                f"Vendido por: {format_value(specs.get('Vendido por'))}",
+                f"CARACTERISTICAS: {format_value(get_spec(specs, 'CARACTERÍSTICAS', 'CARACTERÃSTICAS'))}",
+                f"Tamano: {format_value(get_spec(specs, 'Tamaño', 'TamaÃ±o'))}",
+                f"Unidad de Medida: {format_value(specs.get('Unidad de Medida'))}",
+                f"Numero de Piezas: {format_value(get_spec(specs, 'Número de Piezas', 'NÃºmero de Piezas'))}",
+                f"Ump del Empaque 1 (Out): {format_value(specs.get('Ump del Empaque 1 (Out)'))}",
+                f"Prime: {format_value(specs.get('Prime'))}",
+                f"Factor Neto PUM: {format_value(specs.get('Factor Neto PUM'))}",
+                f"Unidad de Medida PUM Calculado: {format_value(specs.get('Unidad de Medida PUM Calculado'))}",
+                f"allSpecifications: {format_value(data.get('allSpecifications') or [])}",
             ]
+            lines.extend(format_items(data.get("items") or []))
             blocks.append("\n".join(lines))
             found_any = True
         else:
@@ -528,22 +662,7 @@ def answer_full(q: str):
                 "\n".join(
                     [
                         f"Tienda: {current_store.title()}",
-                        "nombre: N/A",
-                        "id: N/A",
-                        "brand: N/A",
-                        "descripcion: N/A",
-                        "categoria: N/A",
-                        "precio: N/A",
-                        "precio_lista: N/A",
-                        "descuento: N/A",
-                        "ahorro: N/A",
-                        "price: N/A",
-                        "last price: N/A",
-                        "PriceWithoutDiscount: N/A",
-                        "FullSellingPrice: N/A",
-                        "PriceValidUntil: N/A",
-                        "link: N/A",
-                        "link_imagen: N/A",
+                        "No se encontro informacion para este SKU en esta tienda.",
                     ]
                 )
             )
@@ -551,7 +670,7 @@ def answer_full(q: str):
     if not found_any:
         return f"No encontre info para {code} en ninguna tienda."
 
-    return "\n\n".join(blocks)
+    return "\n\n" + ("\n\n" + ("-" * 60) + "\n\n").join(blocks)
 
 if __name__ == "__main__":
     question = input("Pregunta: ").strip()
