@@ -1,4 +1,4 @@
-import re
+﻿import re
 import time
 import json
 import unicodedata
@@ -85,12 +85,9 @@ def parse_question(q: str):
         if s in q:
             store = s
             break
-    if not store:
-        raise ValueError("No pude detectar la tienda (metro / olimpica / exito).")
-
     m = re.search(r"\b(\d{6,})\b", q)
     if not m:
-        raise ValueError("No pude detectar el SKU/EAN (número).")
+        raise ValueError("No pude detectar el SKU/EAN (numero).")
 
     code = m.group(1)
     return store, code
@@ -111,10 +108,10 @@ def wants_full_info(question: str) -> bool:
     return any(trigger in normalized for trigger in triggers)
 
 
-# VTEX para metro y olímpica, y parte de éxito (EAN -> itemId -> getProductBySku)
+# VTEX para metro y olÃ­mpica, y parte de Ã©xito (EAN -> itemId -> getProductBySku)
 def extract_vtex(product: dict, code: str):
     """
-    Devuelve (price, list_price, name) si algún item coincide por itemId o ean
+    Devuelve (price, list_price, name) si algÃºn item coincide por itemId o ean
     """
     name = product.get("productName", "Producto")
     for item in product.get("items", []):
@@ -158,7 +155,7 @@ def get_price_vtex(base: str, code: str):
     return None
 
 
-#Información completa del producto (no solo precio) desde VTEX o Éxito
+#Información completa del producto (no solo precio) desde VTEX o Ã‰xito
 def get_product_vtex(base: str, code: str):
     # 1) skuId directo
     url1 = f"{base}/api/catalog_system/pub/products/search/?fq=skuId:{code}"
@@ -187,10 +184,10 @@ def get_product_vtex(base: str, code: str):
     return None
 
 
-# Información completa del producto de ÉXITO (EAN -> itemId -> endpoint getProductBySku)
+# InformaciÃ³n completa del producto de Ã‰XITO (EAN -> itemId -> endpoint getProductBySku)
 def get_price_exito_by_skuid(skuid: str):
     """
-    Endpoint de Éxito por skuId interno (itemId).
+    Endpoint de Ã‰xito por skuId interno (itemId).
     """
     url = f"https://www.exito.com/api/product/getProductBySku?skuid={skuid}"
     r = http_get(url)
@@ -218,7 +215,7 @@ def get_price_exito_by_skuid(skuid: str):
 
 def get_exito_itemid_from_ean(ean: str):
     """
-    Busca en el catálogo VTEX de Éxito por EAN y devuelve el itemId (skuid interno).
+    Busca en el catÃ¡logo VTEX de Ã‰xito por EAN y devuelve el itemId (skuid interno).
     """
     base = "https://www.exito.com"
     url = f"{base}/api/catalog_system/pub/products/search/?fq=alternateIds_Ean:{ean}"
@@ -244,10 +241,10 @@ def get_exito_itemid_from_ean(ean: str):
 
 def get_price_exito(code: str):
     """
-    - Si code parece EAN (13+ dígitos): EAN -> itemId -> getProductBySku
+    - Si code parece EAN (13+ dÃ­gitos): EAN -> itemId -> getProductBySku
     - Si code es skuId: intenta directo
     """
-    # intenta directo por si el usuario pasó skuid
+    # intenta directo por si el usuario pasÃ³ skuid
     direct = get_price_exito_by_skuid(code)
     if direct:
         return direct
@@ -262,9 +259,9 @@ def get_price_exito(code: str):
 
 def get_product_exito(code: str):
     """
-    Devuelve un dict con información "completa" desde:
+    Devuelve un dict con informaciÃ³n "completa" desde:
     - VTEX (si el code era EAN o se puede encontrar)
-    - Endpoint de Éxito getProductBySku (por itemId/skuid)
+    - Endpoint de Ã‰xito getProductBySku (por itemId/skuid)
     """
     vtex_product = None
     skuid = None
@@ -279,7 +276,7 @@ def get_product_exito(code: str):
         if rv.status_code == 200 and rv.json():
             vtex_product = rv.json()[0]
     else:
-        # si no se encontró itemid, asumimos que code ya es skuid
+        # si no se encontrÃ³ itemid, asumimos que code ya es skuid
         skuid = code
         # (opcional) intentar traer VTEX por skuId
         url_vtex2 = f"https://www.exito.com/api/catalog_system/pub/products/search/?fq=skuId:{code}"
@@ -287,7 +284,7 @@ def get_product_exito(code: str):
         if rv2.status_code == 200 and rv2.json():
             vtex_product = rv2.json()[0]
 
-    # 2) endpoint de Éxito por skuid
+    # 2) endpoint de Ã‰xito por skuid
     exito_sku = None
     url_sku = f"https://www.exito.com/api/product/getProductBySku?skuid={skuid}"
     rs = http_get(url_sku)
@@ -298,50 +295,263 @@ def get_product_exito(code: str):
 
 
 
+# Funciones para extraer info consistente del producto (nombre, precio, imagen) intentando matchear item por itemId o EAN, y con fallback al primer item si no hay match exacto.
+
+def extract_item_and_offer(product: dict, code: str):
+    """
+    Intenta encontrar el item por itemId/ean y su oferta.
+    Si no coincide exacto, usa el primer item disponible.
+    """
+    items = product.get("items", []) if product else []
+    if not items:
+        return None, None
+
+    selected = None
+    for item in items:
+        if str(item.get("itemId", "")) == str(code) or str(item.get("ean", "")) == str(code):
+            selected = item
+            break
+
+    if selected is None:
+        selected = items[0]
+
+    offer = None
+    sellers = selected.get("sellers", [])
+    if sellers and sellers[0].get("commertialOffer"):
+        offer = sellers[0]["commertialOffer"]
+
+    return selected, offer
+
+
+def summarize_store_product(store: str, code: str):
+    """
+    Devuelve una vista corta y consistente del producto para una tienda.
+    """
+    if store == "exito":
+        data = get_product_exito(code)
+        if not data["vtex_product"] and not data["exito_sku"]:
+            return None
+
+        product = data["vtex_product"] or {}
+        skuid = data.get("skuid", code)
+
+        item, offer = extract_item_and_offer(product, skuid)
+
+        # Fallback de precio desde getProductBySku cuando no llega por VTEX.
+        if offer is None and data.get("exito_sku"):
+            try:
+                offer = data["exito_sku"][0]["items"][0]["sellers"][0]["commertialOffer"]
+            except Exception:
+                offer = None
+
+        price = offer.get("Price") if offer else None
+        list_price = offer.get("ListPrice") if offer else None
+        price_without_discount = offer.get("PriceWithoutDiscount") if offer else None
+        full_selling_price = offer.get("FullSellingPrice") if offer else None
+        price_valid_until = offer.get("PriceValidUntil") if offer else None
+
+        name = product.get("productName")
+        if not name and data.get("exito_sku"):
+            name = data["exito_sku"][0].get("productName")
+
+        ean = item.get("ean") if item else None
+        sku = item.get("itemId") if item else skuid
+        image = None
+        if item and item.get("images"):
+            image = item["images"][0].get("imageUrl")
+        elif data.get("exito_sku"):
+            try:
+                image = data["exito_sku"][0]["items"][0]["images"][0]["imageUrl"]
+            except Exception:
+                image = None
+
+        descuento = None
+        ahorro = None
+        if (
+            isinstance(price, (int, float))
+            and isinstance(list_price, (int, float))
+            and list_price > price
+            and list_price > 0
+        ):
+            pct = round((1 - (price / list_price)) * 100)
+            descuento = f"{pct}%"
+            ahorro = money_cop(list_price - price)
+
+        return {
+            "tienda": store,
+            "sku_consultado": code,
+            "id": str(product.get("productId")) if product.get("productId") else None,
+            "sku": str(sku) if sku else None,
+            "ean": str(ean) if ean else None,
+            "nombre": name or "Producto",
+            "descripcion": product.get("metaTagDescription"),
+            "categoria": product.get("categories")[0] if product.get("categories") else None,
+            "marca": product.get("brand"),
+            "precio": money_cop(price) if price is not None else None,
+            "precio_lista": money_cop(list_price) if list_price is not None else None,
+            "descuento": descuento,
+            "ahorro": ahorro,
+            "price": money_cop(price) if price is not None else None,
+            "last_price": money_cop(list_price) if list_price is not None else None,
+            "PriceWithoutDiscount": (
+                money_cop(price_without_discount) if price_without_discount is not None else None
+            ),
+            "FullSellingPrice": (
+                money_cop(full_selling_price) if full_selling_price is not None else None
+            ),
+            "PriceValidUntil": price_valid_until,
+            "link": product.get("link"),
+            "link_imagen": image,
+        }
+
+    product = get_product_vtex(STORES[store]["base"], code)
+    if not product:
+        return None
+
+    item, offer = extract_item_and_offer(product, code)
+    price = offer.get("Price") if offer else None
+    list_price = offer.get("ListPrice") if offer else None
+    price_without_discount = offer.get("PriceWithoutDiscount") if offer else None
+    full_selling_price = offer.get("FullSellingPrice") if offer else None
+    price_valid_until = offer.get("PriceValidUntil") if offer else None
+
+    ean = item.get("ean") if item else None
+    sku = item.get("itemId") if item else code
+    image = None
+    if item and item.get("images"):
+        image = item["images"][0].get("imageUrl")
+
+    descuento = None
+    ahorro = None
+    if (
+        isinstance(price, (int, float))
+        and isinstance(list_price, (int, float))
+        and list_price > price
+        and list_price > 0
+    ):
+        pct = round((1 - (price / list_price)) * 100)
+        descuento = f"{pct}%"
+        ahorro = money_cop(list_price - price)
+
+    return {
+        "tienda": store,
+        "sku_consultado": code,
+        "id": str(product.get("productId")) if product.get("productId") else None,
+        "sku": str(sku) if sku else None,
+        "ean": str(ean) if ean else None,
+        "nombre": product.get("productName", "Producto"),
+        "descripcion": product.get("metaTagDescription"),
+        "categoria": product.get("categories")[0] if product.get("categories") else None,
+        "marca": product.get("brand"),
+        "precio": money_cop(price) if price is not None else None,
+        "precio_lista": money_cop(list_price) if list_price is not None else None,
+        "descuento": descuento,
+        "ahorro": ahorro,
+        "price": money_cop(price) if price is not None else None,
+        "last_price": money_cop(list_price) if list_price is not None else None,
+        "PriceWithoutDiscount": (
+            money_cop(price_without_discount) if price_without_discount is not None else None
+        ),
+        "FullSellingPrice": (
+            money_cop(full_selling_price) if full_selling_price is not None else None
+        ),
+        "PriceValidUntil": price_valid_until,
+        "link": product.get("link"),
+        "link_imagen": image,
+    }
+
+
 # Formato de respuesta final al usuario
 def answer(q: str):
     store, code = parse_question(q)
-    info = STORES[store]
+    stores_to_query = [store] if store else list(STORES.keys())
 
-    if info["type"] == "exito":
-        res = get_price_exito(code)
-    else:
-        res = get_price_vtex(info["base"], code)
+    lines = []
+    for current_store in stores_to_query:
+        data = summarize_store_product(current_store, code)
+        if not data:
+            lines.append(f"{current_store.title()} | No encontre informacion para {code}")
+            continue
 
-    if not res:
-        return f"No encontré precio para {code} en {store}."
+        price = data["precio"]
+        list_price = data["precio_lista"]
+        name = data["nombre"]
 
-    price, list_price, name = res
-    if price is None:
-        return f"No encontré precio para {code} en {store}."
+        if not price:
+            lines.append(f"{current_store.title()} | {name} | Sin precio disponible")
+        elif list_price and list_price != price:
+            lines.append(
+                f"{current_store.title()} | {name} | Precio: {price} (antes {list_price})"
+            )
+        else:
+            lines.append(f"{current_store.title()} | {name} | Precio: {price}")
 
-    if list_price and list_price != price:
-        return f"{store.title()} | {name} | Precio: {money_cop(price)} (antes {money_cop(list_price)})"
-
-    return f"{store.title()} | {name} | Precio: {money_cop(price)}"
+    return "\n".join(lines)
 
 
 def answer_full(q: str):
     """
-    Devuelve JSON "completo" del producto (según lo que exponga cada endpoint).
-    Para Metro/Olímpica: JSON VTEX.
-    Para Éxito: dict con VTEX + getProductBySku.
+    Devuelve informacion completa en texto ordenado para una tienda o para las 3 tiendas.
     """
     store, code = parse_question(q)
-    info = STORES[store]
+    stores_to_query = [store] if store else list(STORES.keys())
 
-    if info["type"] == "exito":
-        data = get_product_exito(code)
-        if not data["vtex_product"] and not data["exito_sku"]:
-            return f"No encontré info para {code} en {store}."
-        return pretty(data)
+    blocks = []
+    found_any = False
 
-    product = get_product_vtex(info["base"], code)
-    if not product:
-        return f"No encontré info para {code} en {store}."
-    return pretty(product)
+    for current_store in stores_to_query:
+        data = summarize_store_product(current_store, code)
+        if data:
+            lines = [
+                f"Tienda: {current_store.title()}",
+                f"nombre: {data.get('nombre') or 'N/A'}",
+                f"id: {data.get('id') or 'N/A'}",
+                f"brand: {data.get('marca') or 'N/A'}",
+                f"descripcion: {data.get('descripcion') or 'N/A'}",
+                f"categoria: {data.get('categoria') or 'N/A'}",
+                f"precio: {data.get('precio') or 'N/A'}",
+                f"precio_lista: {data.get('precio_lista') or 'N/A'}",
+                f"descuento: {data.get('descuento') or 'N/A'}",
+                f"ahorro: {data.get('ahorro') or 'N/A'}",
+                f"price: {data.get('price') or 'N/A'}",
+                f"last price: {data.get('last_price') or 'N/A'}",
+                f"PriceWithoutDiscount: {data.get('PriceWithoutDiscount') or 'N/A'}",
+                f"FullSellingPrice: {data.get('FullSellingPrice') or 'N/A'}",
+                f"PriceValidUntil: {data.get('PriceValidUntil') or 'N/A'}",
+                f"link: {data.get('link') or 'N/A'}",
+                f"link_imagen: {data.get('link_imagen') or 'N/A'}",
+            ]
+            blocks.append("\n".join(lines))
+            found_any = True
+        else:
+            blocks.append(
+                "\n".join(
+                    [
+                        f"Tienda: {current_store.title()}",
+                        "nombre: N/A",
+                        "id: N/A",
+                        "brand: N/A",
+                        "descripcion: N/A",
+                        "categoria: N/A",
+                        "precio: N/A",
+                        "precio_lista: N/A",
+                        "descuento: N/A",
+                        "ahorro: N/A",
+                        "price: N/A",
+                        "last price: N/A",
+                        "PriceWithoutDiscount: N/A",
+                        "FullSellingPrice: N/A",
+                        "PriceValidUntil: N/A",
+                        "link: N/A",
+                        "link_imagen: N/A",
+                    ]
+                )
+            )
 
+    if not found_any:
+        return f"No encontre info para {code} en ninguna tienda."
 
+    return "\n\n".join(blocks)
 
 if __name__ == "__main__":
     question = input("Pregunta: ").strip()
@@ -356,3 +566,4 @@ if __name__ == "__main__":
         print("Detalle:", e)
     except Exception as e:
         print("Error:", e)
+

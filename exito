@@ -1,0 +1,85 @@
+[
+  {
+    "productId": "476690",
+    "productName": "Gaseosa POSTOBON duo manzana + colombiana (6250  ml)",
+    "brand": "POSTOBON",
+    "productTitle": "Gaseosa POSTOBON duo manzana + colombiana (6250  ml)",
+    "metaTagDescription": "Lleva a casa fácil y rápido Gaseosa POSTOBON duo manzana + colombiana (6250  ml). Encuentra la mejor garantía. Compra seguro en exito.com",
+    "releaseDate": "2025-06-19T00:00:00Z",
+    "categories": [
+      "/Mercado/Bebidas/Gaseosas y sodas/",
+      "/Mercado/Bebidas/",
+      "/Mercado/"
+    ],
+    "link": "https://tienda.exito.com/duo-postobon-supergigante-x-6250ml-476690/p",
+    "Tipo de producto": [
+      "Gaseosas"
+    ],
+    "Tamaño": [
+      "FAMILIAR"
+    ],
+    "Unidad de Medida": [
+      "Mililitro"
+    ],
+    "Número de Piezas": [
+      "1"
+    ],
+    "Ump del Empaque 1 (Out)": [
+      "KILOGRAMO"
+    ],
+    "Prime": [
+      "Si"
+    ],
+    "Factor Neto PUM": [
+      "6250"
+    ],
+    "Unidad de Medida PUM Calculado": [
+      "Mililitro"
+    ],
+    "allSpecifications": [
+      "Referencia",
+      "IVA",
+      "Tipo de producto",
+      "Vendido por",
+      "Tamaño",
+      "Unidad de Medida",
+      "Número de Piezas",
+      "Ump del Empaque 1 (Out)",
+      "Prime",
+      "Factor Neto PUM",
+      "Unidad de Medida PUM Calculado"
+    ],
+    "items": [
+      {
+        "isKit": false,
+        "images": [
+          {
+            "imageUrl": "https://exitocol.vteximg.com.br/arquivos/ids/28927927/Duo-Postobon-Supergigante-X-6250ml-26874_a.jpg?v=638859456367730000",
+            "imageLastModified": "2025-06-19T16:00:36.7730000Z"
+          }
+        ],
+        "sellers": [
+          {
+            "sellerId": "1",
+            "sellerName": "exito",
+            "addToCartLink": "https://tienda.exito.com/checkout/cart/add?sku=26874&qty=1&seller=1&sc=1&price=1560000&cv=_&sc=1",
+            "sellerDefault": true,
+            "commertialOffer": {
+              "BuyTogether": [],
+              "Price": 15600,
+              "ListPrice": 16650,
+              "PriceWithoutDiscount": 15600,
+              "FullSellingPrice": 15600,
+              "PriceValidUntil": "2027-02-25T21:51:47Z",
+              "AvailableQuantity": 99999,
+              "IsAvailable": true,
+              "Tax": 0
+            }
+          }
+        ],
+        "Videos": [],
+        "estimatedDateArrival": null
+      }
+    ]
+  }
+]

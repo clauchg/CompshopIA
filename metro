@@ -1,0 +1,77 @@
+[
+  {
+    "productId": "266297",
+    "productName": "Blanqueador Clorox Original x1.8L + 460ml",
+    "brand": "CLOROX",
+    "productTitle": "Blanqueador Cloro 1800ml + Blanqueador Cloro 460ml  | Jumbo\\\\Blanqueador Cloro 1800ml + Blanqueador 460ml | Tiendas Metro",
+    "metaTagDescription": "Compra Blanqueador Clorox Original x1.8L + 460ml y renueva tu hogar. En Easy.cl encontrarás todo en Blanqueadores para renovar el amor por tu hogar",
+    "releaseDate": "2022-12-26T00:00:00Z",
+    "categories": [
+      "/Supermercado/Aseo De Hogar/Blanqueadores/",
+      "/Supermercado/Aseo De Hogar/",
+      "/Supermercado/"
+    ],
+    "link": "https://www.jumbocolombia.com/blanqueador-clorox-x1800ml-blanqueadorx460ml/p",
+
+    "Tipo de Producto": [
+      "Blanqueadores"
+    ],
+    "Marca": [
+      "Clorox"
+    ],
+    "EAN": [
+      "7702213400181"
+    ],
+    "Vendido por": [
+      "Jumbo"
+    ],
+    "CARACTERÍSTICAS": [
+      "Super Oferta. Elimina el virus causante del COVID-19. Limpieza + Desinfección + No amarilleo. Elimina el 99,9% de bacterias. Limpia múltiples superficies"
+    ],
+
+    "allSpecifications": [
+      "CARACTERÍSTICAS",
+      "Vendido por",
+      "Marca",
+      "Tipo de Producto",
+      "EAN"
+    ],
+
+    "items": [
+      {
+        "isKit": false,
+        "images": [
+          {
+            "imageUrl": "https://jumbocolombiaio.vteximg.com.br/arquivos/ids/580689/7702213400181_1.jpg?v=638451650961670000",
+            "imageLastModified": "2024-03-04T16:04:56.1670000Z"
+          },
+          {
+            "imageUrl": "https://jumbocolombiaio.vteximg.com.br/arquivos/ids/580696/7702213400181_2.jpg?v=638451650987070000",
+            "imageLastModified": "2024-03-04T16:04:58.7070000Z"
+          }
+        ],
+        "sellers": [
+          {
+            "sellerId": "1",
+            "sellerName": "Cencosud - Colombia",
+            "addToCartLink": "https://www.jumbocolombia.com/checkout/cart/add?sku=266297&qty=1&seller=1&sc=1&price=899000&cv=_&sc=1",
+            "sellerDefault": true,
+            "commertialOffer": {
+              "BuyTogether": [],
+              "Price": 8990,
+              "ListPrice": 8990,
+              "PriceWithoutDiscount": 8990,
+              "FullSellingPrice": 8990,
+              "PriceValidUntil": "2027-02-24T22:01:41Z",
+              "AvailableQuantity": 157,
+              "IsAvailable": true,
+              "Tax": 0
+            }
+          }
+        ],
+        "Videos": [],
+        "estimatedDateArrival": null
+      }
+    ]
+  }
+]
