@@ -322,6 +322,28 @@ def extract_item_and_offer(product: dict, code: str):
     return selected, offer
 
 
+def normalize_spec_key(text: str) -> str:
+    if text is None:
+        return ""
+    normalized = unicodedata.normalize("NFKD", str(text).lower())
+    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    return " ".join(normalized.split())
+
+
+def resolve_spec_value(product: dict, spec_name: str):
+    """
+    Busca el valor de una especificacion tolerando cambios de mayusculas/tildes.
+    """
+    if spec_name in product:
+        return product.get(spec_name)
+
+    target = normalize_spec_key(spec_name)
+    for key, value in product.items():
+        if normalize_spec_key(key) == target:
+            return value
+    return None
+
+
 def sanitize_items(items):
     """
     Normaliza items al formato solicitado y evita campos extra (ej. metodos de pago).
@@ -430,7 +452,7 @@ def summarize_store_product(store: str, code: str):
 
         specifications_map = {}
         for spec_name in product.get("allSpecifications", []) or []:
-            specifications_map[spec_name] = product.get(spec_name)
+            specifications_map[spec_name] = resolve_spec_value(product, spec_name)
 
         return {
             "tienda": store,
@@ -503,7 +525,7 @@ def summarize_store_product(store: str, code: str):
 
     specifications_map = {}
     for spec_name in product.get("allSpecifications", []) or []:
-        specifications_map[spec_name] = product.get(spec_name)
+        specifications_map[spec_name] = resolve_spec_value(product, spec_name)
 
     return {
         "tienda": store,
@@ -587,9 +609,15 @@ def answer_full(q: str):
 
     def format_items(items):
         if not items:
-            return ["Items: N/A"]
+            return [
+                "isKit: N/A",
+                "imagenes: N/A",
+                "sellers: N/A",
+                "videos: N/A",
+                "estimatedDateArrival: N/A",
+            ]
 
-        lines = [f"Items: {len(items)}"]
+        lines = []
         for i, item in enumerate(items, start=1):
             image_urls = [
                 img.get("imageUrl")
@@ -603,14 +631,15 @@ def answer_full(q: str):
             ]
             lines.extend(
                 [
-                    f"  - Item {i}:",
-                    f"    isKit: {format_value(item.get('isKit'))}",
-                    f"    imagenes: {format_value(image_urls)}",
-                    f"    sellers: {format_value(seller_names)}",
-                    f"    videos: {len(item.get('Videos') or [])}",
-                    f"    estimatedDateArrival: {format_value(item.get('estimatedDateArrival'))}",
+                    f"isKit: {format_value(item.get('isKit'))}",
+                    f"imagenes: {format_value(image_urls)}",
+                    f"sellers: {format_value(seller_names)}",
+                    f"videos: {len(item.get('Videos') or [])}",
+                    f"estimatedDateArrival: {format_value(item.get('estimatedDateArrival'))}",
                 ]
             )
+            if i < len(items):
+                lines.append("")
         return lines
 
     def get_spec(specs: dict, *keys):
@@ -640,10 +669,10 @@ def answer_full(q: str):
                 f"Categorias: {format_value(data.get('categories') or [])}",
                 f"Link: {format_value(data.get('link'))}",
                 f"Maximo de unidades: {format_value(data.get('Maximum_units_to_sell') or [])}",
-                f"Tipo de Producto: {format_value(specs.get('Tipo de Producto'))}",
-                f"Marca (especificacion): {format_value(specs.get('Marca'))}",
-                f"EAN: {format_value(specs.get('EAN'))}",
-                f"Vendido por: {format_value(specs.get('Vendido por'))}",
+                f"Tipo de Producto: {format_value(get_spec(specs, 'Tipo de Producto', 'Tipo de producto'))}",
+                f"Marca (especificacion): {format_value(get_spec(specs, 'Marca', 'brand', 'Brand'))}",
+                f"EAN: {format_value(get_spec(specs, 'EAN', 'Ean', 'ean'))}",
+                f"Vendido por: {format_value(get_spec(specs, 'Vendido por', 'Vendido Por'))}",
                 f"CARACTERISTICAS: {format_value(get_spec(specs, 'CARACTERÍSTICAS', 'CARACTERÃSTICAS'))}",
                 f"Tamano: {format_value(get_spec(specs, 'Tamaño', 'TamaÃ±o'))}",
                 f"Unidad de Medida: {format_value(specs.get('Unidad de Medida'))}",
@@ -652,7 +681,6 @@ def answer_full(q: str):
                 f"Prime: {format_value(specs.get('Prime'))}",
                 f"Factor Neto PUM: {format_value(specs.get('Factor Neto PUM'))}",
                 f"Unidad de Medida PUM Calculado: {format_value(specs.get('Unidad de Medida PUM Calculado'))}",
-                f"allSpecifications: {format_value(data.get('allSpecifications') or [])}",
             ]
             lines.extend(format_items(data.get("items") or []))
             blocks.append("\n".join(lines))
